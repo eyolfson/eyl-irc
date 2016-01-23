@@ -26,7 +26,7 @@ int irc_nick(int fd, char *nick)
 	size_t buffer_limit = sizeof(buffer) -1;
 
 	if (snprintf(buffer, buffer_limit, "USER %s 0 0 :%s\r\n", nick, nick)
-      == sizeof(buffer)) {
+	    == sizeof(buffer)) {
 		return -1;
 	}
 	if (write(fd, buffer, strlen(buffer)) == -1) {
@@ -34,8 +34,8 @@ int irc_nick(int fd, char *nick)
 	}
 
 	if (snprintf(buffer, buffer_limit, "NICK %s\r\n", nick)
-      == sizeof(buffer)) {
-		return -1;
+	    == sizeof(buffer)) {
+		return 1;
 	}
 	if (write(fd, buffer, strlen(buffer)) == -1) {
 		return 1;
@@ -89,6 +89,12 @@ int main(int argc, char **argv)
 			putchar(buffer[i]);
 		}
 
+		if (bytes_read > 4 && strncmp(buffer, "PING", 4) == 0) {
+			buffer[1] = 'O';
+			if (write(fd, buffer, bytes_read) == -1) {
+				return 1;
+			}
+		}
 		bytes_read = read(fd, buffer, sizeof(buffer));
 	}
 
