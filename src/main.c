@@ -44,16 +44,33 @@ int irc_nick(int fd, char *nick)
 	return 0;
 }
 
+int join_channel(int fd, char *channel)
+{
+	char buffer[512];
+	size_t buffer_limit = sizeof(buffer) -1;
+
+	if (snprintf(buffer, buffer_limit, "JOIN %s\r\n", channel)
+	    == sizeof(buffer)) {
+		return -1;
+	}
+	if (write(fd, buffer, strlen(buffer)) == -1) {
+		return 1;
+	}
+
+	return 0;
+}
+
 int main(int argc, char **argv)
 {
 	printf("IRC Client 0.0.1-development\n");
 
-	if (argc != 3) {
+	if (argc != 4) {
 		return 1;
 	}
 
 	char *host = argv[1];
 	char *nick = argv[2];
+	char *channel = argv[3];
 
 	struct addrinfo hints = {
 		.ai_family = AF_INET,
@@ -76,6 +93,10 @@ int main(int argc, char **argv)
 	char buffer[4096];
 
 	if (irc_nick(fd, nick) != 0) {
+		return 1;
+	}
+
+	if (join_channel(fd, channel) != 0) {
 		return 1;
 	}
 
