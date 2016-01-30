@@ -23,7 +23,11 @@
 
 #include "xdg_shell.h"
 
-int irc_nick(int fd, char *nick)
+static const int16_t IRC_MAX_MESSAGE_LENGTH = 512;
+
+static int32_t irc_fd;
+
+int irc_nick(char *nick)
 {
 	char buffer[512];
 	size_t buffer_limit = sizeof(buffer) -1;
@@ -32,7 +36,7 @@ int irc_nick(int fd, char *nick)
 	    == sizeof(buffer)) {
 		return -1;
 	}
-	if (write(fd, buffer, strlen(buffer)) == -1) {
+	if (write(irc_fd, buffer, strlen(buffer)) == -1) {
 		return 1;
 	}
 
@@ -40,23 +44,7 @@ int irc_nick(int fd, char *nick)
 	    == sizeof(buffer)) {
 		return 1;
 	}
-	if (write(fd, buffer, strlen(buffer)) == -1) {
-		return 1;
-	}
-
-	return 0;
-}
-
-int join_channel(int fd, char *channel)
-{
-	char buffer[512];
-	size_t buffer_limit = sizeof(buffer) -1;
-
-	if (snprintf(buffer, buffer_limit, "JOIN %s\r\n", channel)
-	    == sizeof(buffer)) {
-		return -1;
-	}
-	if (write(fd, buffer, strlen(buffer)) == -1) {
+	if (write(irc_fd, buffer, strlen(buffer)) == -1) {
 		return 1;
 	}
 
@@ -70,17 +58,82 @@ int32_t irc_connect(const char *host)
 		.ai_socktype = SOCK_STREAM,
 	};
 	struct addrinfo *res;
+	if (getaddrinfo(host, "6667", &hints, &res) != 0) {
+		return -1;
+	}
 
-	getaddrinfo(host, "6667", &hints, &res);
 	int32_t fd = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
 	if (fd < 0) {
-		return -1;
+		freeaddrinfo(res);
+		return fd;
 	}
 	if (connect(fd, res->ai_addr, res->ai_addrlen) < 0) {
 		close(fd);
+		freeaddrinfo(res);
 		return -1;
 	}
+	freeaddrinfo(res);
 	return fd;
+}
+
+int32_t irc_handle_message(uint8_t *data, size_t size)
+{
+	if (size > 4 && strncmp(data, "PING", 4) == 0) {
+		data[1] = 'O';
+		if (write(irc_fd, data, size) < 0) {
+			return 1;
+		}
+	}
+
+	return 0;
+}
+
+int32_t irc_receive_message_loop()
+{
+	int32_t ret = 0;
+
+	uint8_t message[IRC_MAX_MESSAGE_LENGTH];
+	uint16_t message_position = 0;
+
+	uint8_t buffer[4096];
+
+	ssize_t bytes_read = read(irc_fd, buffer, sizeof(buffer));
+	if (bytes_read <= 0) {
+		return 1;
+	}
+
+	while (bytes_read > 0) {
+		for (size_t i = 0; i < (size_t) bytes_read; ++i) {
+			/* Copy a byte from the buffer to this message */
+			message[message_position] = buffer[i];
+			++message_position;
+
+			/* Message too large */
+			if (message_position == IRC_MAX_MESSAGE_LENGTH) {
+				return 2;
+			}
+
+			if (message_position > 2
+			    && message[message_position - 2] == '\r'
+			    && message[message_position - 1] == '\n') {
+				ret = irc_handle_message(
+					message, message_position);
+				if (ret != 0) {
+					return ret;
+				}
+
+				message_position = 0;
+			}
+		}
+
+		bytes_read = read(irc_fd, buffer, sizeof(buffer));
+	}
+
+	if (bytes_read < 0) {
+		return 1;
+	}
+
+	return ret;
 }
 
 int main(int argc, char **argv)
@@ -92,52 +145,31 @@ int main(int argc, char **argv)
 		}
 	}
 
-	if (argc != 4) {
+	if (argc != 3) {
 		return 1;
 	}
 
 	char *host = argv[1];
 	char *nick = argv[2];
-	char *channel = argv[3];
 
-	printf("Attempting to connect to '%s' as '%s'\n", host, nick);
-	int32_t fd = irc_connect(host);
-	if (fd < 0) {
+	irc_fd = irc_connect(host);
+	if (irc_fd < 0) {
 		return 1;
 	}
 
-	char buffer[4096];
+	int32_t ret;
 
-	if (irc_nick(fd, nick) != 0) {
-		return 1;
+	ret = irc_nick(nick);
+	if (ret != 0) {
+		goto irc_main_error;
 	}
 
-	if (join_channel(fd, channel) != 0) {
-		return 1;
+	ret = irc_receive_message_loop();
+	if (ret != 0) {
+		goto irc_main_error;
 	}
 
-	ssize_t bytes_read = read(fd, buffer, sizeof(buffer));
-	if (bytes_read <= 0) {
-		return 1;
-	}
-
-	while (bytes_read > 0) {
-		for (size_t i = 0; i < (size_t) bytes_read; ++i) {
-			putchar(buffer[i]);
-		}
-
-		if (bytes_read > 4 && strncmp(buffer, "PING", 4) == 0) {
-			buffer[1] = 'O';
-			if (write(fd, buffer, bytes_read) == -1) {
-				return 1;
-			}
-		}
-		bytes_read = read(fd, buffer, sizeof(buffer));
-	}
-
-	if (bytes_read == -1) {
-		return 1;
-	}
-
-	return 0;
+irc_main_error:
+	close(irc_fd);
+	return ret;
 }
