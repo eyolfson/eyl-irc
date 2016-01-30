@@ -85,7 +85,12 @@ int32_t irc_connect(const char *host)
 
 int main(int argc, char **argv)
 {
-	printf("IRC Client 0.0.1-development\n");
+	for (int i = 1; i < argc; ++i) {
+		if (strcmp(argv[i], "--version") == 0) {
+			printf("IRC Client 0.0.1-development\n");
+			return 0;
+		}
+	}
 
 	if (argc != 4) {
 		return 1;
