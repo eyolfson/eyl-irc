@@ -23,7 +23,7 @@
 
 #include "xdg_shell.h"
 
-static const int16_t IRC_MAX_MESSAGE_LENGTH = 512;
+static const int16_t IRC_MESSAGE_LENGTH_MAX = 512;
 
 static int32_t irc_fd;
 
@@ -76,11 +76,11 @@ int32_t irc_connect(const char *host)
 	return fd;
 }
 
-int32_t irc_handle_message(uint8_t *data, size_t size)
+int32_t irc_handle_message(uint8_t *data, uint16_t length)
 {
-	if (size > 4 && strncmp(data, "PING", 4) == 0) {
+	if (length >= 4 && strncmp(data, "PING", 4) == 0) {
 		data[1] = 'O';
-		if (write(irc_fd, data, size) < 0) {
+		if (write(irc_fd, data, length) < 0) {
 			return 1;
 		}
 	}
@@ -92,8 +92,8 @@ int32_t irc_receive_messages()
 {
 	int32_t ret = 0;
 
-	uint8_t message[IRC_MAX_MESSAGE_LENGTH];
-	uint16_t message_position = 0;
+	uint8_t message[IRC_MESSAGE_LENGTH_MAX];
+	uint16_t length = 0;
 
 	uint8_t buffer[4096];
 
@@ -105,25 +105,26 @@ int32_t irc_receive_messages()
 	while (bytes_read > 0) {
 		for (size_t i = 0; i < (size_t) bytes_read; ++i) {
 			/* Copy a byte from the buffer to this message */
-			message[message_position] = buffer[i];
-			++message_position;
+			message[length] = buffer[i];
+			++length;
 
 			/* Message too large */
-			if (message_position == IRC_MAX_MESSAGE_LENGTH) {
+			if (length == IRC_MESSAGE_LENGTH_MAX) {
 				return 2;
 			}
 
 			/* End of message condition (ends in \r\n) */
-			if (message_position > 2
-			    && message[message_position - 2] == '\r'
-			    && message[message_position - 1] == '\n') {
+			if (length >= 2
+			    && message[length - 2] == '\r'
+			    && message[length - 1] == '\n') {
 				ret = irc_handle_message(
-					message, message_position);
+					message, length);
 				if (ret != 0) {
 					return ret;
 				}
 
-				message_position = 0;
+				/* Reset message length for next message */
+				length = 0;
 			}
 		}
 
