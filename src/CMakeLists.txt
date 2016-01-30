@@ -22,6 +22,8 @@ pkg_check_modules(CAIRO REQUIRED cairo)
 pkg_check_modules(WAYLAND_CLIENT REQUIRED wayland-client)
 pkg_check_modules(WAYLAND_SCANNER REQUIRED wayland-scanner)
 
+find_package(Threads)
+
 include_directories(
 	${CMAKE_BINARY_DIR}
 	${CAIRO_INCLUDE_DIRS}
@@ -53,6 +55,7 @@ add_executable(irc-client
 	${CMAKE_BINARY_DIR}/xdg_shell.h
 )
 target_link_libraries(irc-client
+	${CMAKE_THREAD_LIBS_INIT}
 	${CAIRO_LIBRARIES}
 	${WAYLAND_CLIENT_LIBRARIES}
 )
