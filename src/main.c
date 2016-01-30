@@ -88,7 +88,7 @@ int32_t irc_handle_message(uint8_t *data, size_t size)
 	return 0;
 }
 
-int32_t irc_receive_message_loop()
+int32_t irc_receive_messages()
 {
 	int32_t ret = 0;
 
@@ -165,7 +165,7 @@ int main(int argc, char **argv)
 		goto irc_main_error;
 	}
 
-	ret = irc_receive_message_loop();
+	ret = irc_receive_messages();
 	if (ret != 0) {
 		goto irc_main_error;
 	}
