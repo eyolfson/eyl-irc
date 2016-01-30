@@ -109,7 +109,7 @@ int32_t irc_receive_messages()
 			++length;
 
 			/* Message too large */
-			if (length == IRC_MESSAGE_LENGTH_MAX) {
+			if (length > IRC_MESSAGE_LENGTH_MAX) {
 				return 2;
 			}
 
