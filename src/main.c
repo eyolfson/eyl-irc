@@ -113,6 +113,7 @@ int32_t irc_receive_message_loop()
 				return 2;
 			}
 
+			/* End of message condition (ends in \r\n) */
 			if (message_position > 2
 			    && message[message_position - 2] == '\r'
 			    && message[message_position - 1] == '\n') {
