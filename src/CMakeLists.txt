@@ -16,10 +16,43 @@ cmake_minimum_required(VERSION 3.1.3)
 
 project(IRC_CLIENT C)
 
+find_package(PkgConfig)
+
+pkg_check_modules(CAIRO REQUIRED cairo)
+pkg_check_modules(WAYLAND_CLIENT REQUIRED wayland-client)
+pkg_check_modules(WAYLAND_SCANNER REQUIRED wayland-scanner)
+
+include_directories(
+	${CMAKE_BINARY_DIR}
+	${CAIRO_INCLUDE_DIRS}
+	${WAYLAND_CLIENT_INCLUDE_DIRS}
+)
+
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 add_compile_options(-Wextra)
 
+add_custom_command(
+	OUTPUT ${CMAKE_BINARY_DIR}/xdg_shell.h
+	COMMAND wayland-scanner
+	ARGS client-header
+	     ${CMAKE_SOURCE_DIR}/../wayland-protocol/xdg-shell-unstable-v5.xml
+	     ${CMAKE_BINARY_DIR}/xdg_shell.h
+)
+add_custom_command(
+	OUTPUT ${CMAKE_BINARY_DIR}/xdg_shell.c
+	COMMAND wayland-scanner
+	ARGS code
+	     ${CMAKE_SOURCE_DIR}/../wayland-protocol/xdg-shell-unstable-v5.xml
+	     ${CMAKE_BINARY_DIR}/xdg_shell.c
+)
+
 add_executable(irc-client
 	main.c
+	${CMAKE_BINARY_DIR}/xdg_shell.c
+	${CMAKE_BINARY_DIR}/xdg_shell.h
+)
+target_link_libraries(irc-client
+	${CAIRO_LIBRARIES}
+	${WAYLAND_CLIENT_LIBRARIES}
 )

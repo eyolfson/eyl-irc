@@ -20,6 +20,8 @@
 #include <string.h>
 #include <unistd.h>
 
+#include "xdg_shell.h"
+
 int irc_nick(int fd, char *nick)
 {
 	char buffer[512];
