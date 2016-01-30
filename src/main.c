@@ -16,6 +16,7 @@
  */
 
 #include <netdb.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
@@ -62,6 +63,26 @@ int join_channel(int fd, char *channel)
 	return 0;
 }
 
+int32_t irc_connect(const char *host)
+{
+	struct addrinfo hints = {
+		.ai_family = AF_INET,
+		.ai_socktype = SOCK_STREAM,
+	};
+	struct addrinfo *res;
+
+	getaddrinfo(host, "6667", &hints, &res);
+	int32_t fd = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
+	if (fd < 0) {
+		return -1;
+	}
+	if (connect(fd, res->ai_addr, res->ai_addrlen) < 0) {
+		close(fd);
+		return -1;
+	}
+	return fd;
+}
+
 int main(int argc, char **argv)
 {
 	printf("IRC Client 0.0.1-development\n");
@@ -74,21 +95,9 @@ int main(int argc, char **argv)
 	char *nick = argv[2];
 	char *channel = argv[3];
 
-	struct addrinfo hints = {
-		.ai_family = AF_INET,
-		.ai_socktype = SOCK_STREAM,
-	};
-	struct addrinfo *res;
-
-	getaddrinfo(host, "6667", &hints, &res);
-
 	printf("Attempting to connect to '%s' as '%s'\n", host, nick);
-
-	int fd = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
-	if (fd == -1) {
-		return 1;
-	}
-	if (connect(fd, res->ai_addr, res->ai_addrlen) == -1) {
+	int32_t fd = irc_connect(host);
+	if (fd < 0) {
 		return 1;
 	}
 
