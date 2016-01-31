@@ -51,10 +51,11 @@ add_custom_command(
 
 add_executable(irc-client
 	main.c
-	wayland.c
 	exit_code.c
+	irc.c
 	${CMAKE_BINARY_DIR}/xdg_shell.c
 	${CMAKE_BINARY_DIR}/xdg_shell.h
+	wayland.c
 )
 target_link_libraries(irc-client
 	${CMAKE_THREAD_LIBS_INIT}
