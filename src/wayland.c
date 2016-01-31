@@ -86,28 +86,33 @@ static void xs_close(void *data, struct xdg_surface *xdg_surface)
 
 static void draw(cairo_t *cr)
 {
-    struct timespec timespec;
-    struct tm tm;
-    char buffer[200];
-    clock_gettime(CLOCK_REALTIME, &timespec);
-    localtime_r(&timespec.tv_sec, &tm);
-    sprintf(buffer, "%02d:%02d:%02d.%03ld",
-            tm.tm_hour, tm.tm_min, tm.tm_sec, timespec.tv_nsec / 1000000);
+	struct timespec timespec;
+	struct tm tm;
+	char buffer[200];
+	clock_gettime(CLOCK_REALTIME, &timespec);
+	localtime_r(&timespec.tv_sec, &tm);
+	sprintf(buffer, "%02d:%02d:%02d.%03ld",
+		tm.tm_hour, tm.tm_min, tm.tm_sec, timespec.tv_nsec / 1000000);
 
-    /* printf("%s %p\n", buffer, cr); */
+	cairo_set_source_rgb(cr, 0, 0.169, 0.212);
+	cairo_paint(cr);
+	cairo_set_line_width(cr, 1);
+	cairo_set_source_rgb(cr, 0.345, 0.431, 0.459);
+	cairo_rectangle(cr, 10, 10, 280, 180);
+	cairo_stroke(cr);
 
-    cairo_set_source_rgba(cr, 0, 0, 0, 0.8);
-    cairo_paint(cr);
-    cairo_set_line_width(cr, 1);
-    cairo_set_source_rgb(cr, 1, 1, 1);
-    cairo_rectangle(cr, 10, 10, 280, 180);
-    cairo_stroke(cr);
-    cairo_select_font_face(cr, "Source Code Pro",
-                           CAIRO_FONT_SLANT_NORMAL,
-                           CAIRO_FONT_WEIGHT_BOLD);
-    cairo_set_font_size(cr, 13);
-    cairo_move_to(cr, 20, 30);
-    cairo_show_text(cr, buffer);
+	cairo_select_font_face(cr, "Cousine",
+		CAIRO_FONT_SLANT_NORMAL,
+		CAIRO_FONT_WEIGHT_BOLD);
+	cairo_set_font_size(cr, 13);
+
+	cairo_set_source_rgb(cr, 0.514, 0.580, 0.589);
+	cairo_move_to(cr, 20, 30);
+	cairo_show_text(cr, "Connecting..");
+
+	cairo_set_source_rgb(cr, 0.149, 0.545, 0.824);
+	cairo_move_to(cr, 20, 50);
+	cairo_show_text(cr, buffer);
 }
 
 static struct wl_registry_listener registry_listener = {global, global_remove};
