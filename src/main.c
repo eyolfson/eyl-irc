@@ -67,5 +67,7 @@ int main(int argc, char **argv)
 
 	run_threads();
 
+	irc_finish();
+
 	return get_exit_code();
 }
