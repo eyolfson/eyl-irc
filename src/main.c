@@ -17,12 +17,11 @@
 
 #include "exit_code.h"
 #include "irc.h"
+#include "wayland.h"
 
 #include <pthread.h>
 #include <stdio.h>
 #include <string.h>
-
-void *wayland_start(void *);
 
 void run_threads()
 {
