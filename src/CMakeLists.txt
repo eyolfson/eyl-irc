@@ -51,6 +51,8 @@ add_custom_command(
 
 add_executable(irc-client
 	main.c
+	wayland.c
+	exit_code.c
 	${CMAKE_BINARY_DIR}/xdg_shell.c
 	${CMAKE_BINARY_DIR}/xdg_shell.h
 )

@@ -16,15 +16,16 @@
  */
 
 #include <netdb.h>
+#include <pthread.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
 
+#include "exit_code.h"
 #include "xdg_shell.h"
 
 static const int16_t IRC_MESSAGE_LENGTH_MAX = 512;
-
 static int32_t irc_fd;
 
 int irc_nick(char *nick)
@@ -85,13 +86,13 @@ int32_t irc_handle_message(uint8_t *data, uint16_t length)
 		}
 	}
 
+	printf("Got message length %d\n", length);
+
 	return 0;
 }
 
 int32_t irc_receive_messages()
 {
-	int32_t ret = 0;
-
 	uint8_t message[IRC_MESSAGE_LENGTH_MAX];
 	uint16_t length = 0;
 
@@ -117,7 +118,7 @@ int32_t irc_receive_messages()
 			if (length >= 2
 			    && message[length - 2] == '\r'
 			    && message[length - 1] == '\n') {
-				ret = irc_handle_message(
+				uint8_t ret = irc_handle_message(
 					message, length);
 				if (ret != 0) {
 					return ret;
@@ -128,6 +129,10 @@ int32_t irc_receive_messages()
 			}
 		}
 
+		if (is_exiting()) {
+			return 0;
+		}
+
 		bytes_read = read(irc_fd, buffer, sizeof(buffer));
 	}
 
@@ -135,7 +140,41 @@ int32_t irc_receive_messages()
 		return 1;
 	}
 
-	return ret;
+	return 0;
+}
+
+void *irc_start(void *arg)
+{
+	uint8_t ret = irc_receive_messages();
+	if (ret != 0) {
+		set_exit_code(ret);
+	}
+	return NULL;
+}
+
+void *wayland_start(void *);
+
+uint8_t run_threads()
+{
+	pthread_t irc_thread;
+	pthread_t wayland_thread;
+
+	if (pthread_create(&irc_thread, NULL, &irc_start, NULL) != 0) {
+		return 1;
+	}
+	if (pthread_create(&wayland_thread, NULL, &wayland_start, NULL) != 0) {
+		return 1;
+	}
+
+	if (pthread_join(irc_thread, NULL) != 0) {
+		return 1;
+	}
+
+	if (pthread_join(wayland_thread, NULL) != 0) {
+		return 1;
+	}
+
+	return 0;
 }
 
 int main(int argc, char **argv)
@@ -150,7 +189,6 @@ int main(int argc, char **argv)
 	if (argc != 3) {
 		return 1;
 	}
-
 	char *host = argv[1];
 	char *nick = argv[2];
 
@@ -158,20 +196,20 @@ int main(int argc, char **argv)
 	if (irc_fd < 0) {
 		return 1;
 	}
-
-	int32_t ret;
-
-	ret = irc_nick(nick);
+	uint32_t ret = irc_nick(nick);
 	if (ret != 0) {
 		goto irc_main_error;
 	}
 
-	ret = irc_receive_messages();
-	if (ret != 0) {
-		goto irc_main_error;
-	}
+	ret = run_threads();
 
 irc_main_error:
 	close(irc_fd);
-	return ret;
+
+	if (ret != 0) {
+		return ret;
+	}
+	else {
+		return get_exit_code();
+	}
 }
