@@ -20,6 +20,14 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+#ifdef __cpluscplus
+extern "C" {
+#endif
+
 void set_exit_code(uint8_t value);
 bool is_exiting();
 uint8_t get_exit_code();
+
+#ifdef __cpluscplus
+}
+#endif
