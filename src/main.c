@@ -23,29 +23,34 @@
 #include <stdio.h>
 #include <string.h>
 
-void run_threads()
+void run_wayland_thread()
 {
-	pthread_t irc_thread;
 	pthread_t wayland_thread;
 
-	if (pthread_create(&irc_thread, NULL, &irc_start, NULL) != 0) {
-		set_exit_code(1);
-		return;
-	}
 	if (pthread_create(&wayland_thread, NULL, &wayland_start, NULL) != 0) {
 		set_exit_code(1);
 		return;
 	}
 
-	if (pthread_join(irc_thread, NULL) != 0) {
+	/* Errors are not possible on this pthread_join */
+	pthread_join(wayland_thread, NULL);
+}
+
+void run_threads()
+{
+	pthread_t irc_thread;
+
+	if (pthread_create(&irc_thread, NULL, &irc_start, NULL) != 0) {
 		set_exit_code(1);
 		return;
 	}
 
-	if (pthread_join(wayland_thread, NULL) != 0) {
-		set_exit_code(1);
-		return;
-	}
+	run_wayland_thread();
+
+	/* Errors are not possible on this pthread_join */
+	pthread_join(irc_thread, NULL);
+
+	irc_finish();
 }
 
 bool print_version(int argc, char **argv)
@@ -74,8 +79,6 @@ int main(int argc, char **argv)
 	irc_connect(host, nick);
 
 	run_threads();
-
-	irc_finish();
 
 	return get_exit_code();
 }
