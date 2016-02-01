@@ -19,7 +19,15 @@
 
 #include <stdint.h>
 
+#ifdef __cpluscplus
+extern "C" {
+#endif
+
 void *irc_start(void *arg);
 void irc_finish();
 
 void irc_connect(const uint8_t *host, const uint8_t *nick);
+
+#ifdef __cpluscplus
+}
+#endif

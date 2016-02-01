@@ -19,4 +19,12 @@
 
 #include <stdint.h>
 
+#ifdef __cpluscplus
+extern "C" {
+#endif
+
 void *wayland_start(void *arg);
+
+#ifdef __cpluscplus
+}
+#endif
