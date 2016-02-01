@@ -41,33 +41,38 @@ static void global(void *data,
                    const char *interface,
                    uint32_t version)
 {
-    if (strcmp(interface, wl_compositor_interface.name) == 0) {
-        wl_compositor = wl_registry_bind(wl_registry,
-                                         name,
-                                         &wl_compositor_interface,
-                                         version);
-    }
-    else if (strcmp(interface, wl_shm_interface.name) == 0) {
-        wl_shm = wl_registry_bind(wl_registry,
-                                  name,
-                                  &wl_shm_interface,
-                                  version);
-    }
-    else if (strcmp(interface, xdg_shell_interface.name) == 0) {
-        xdg_shell = wl_registry_bind(wl_registry,
-                                     name,
-                                     &xdg_shell_interface,
-                                     version);
-    }
+	if (strcmp(interface, wl_compositor_interface.name) == 0) {
+		wl_compositor = wl_registry_bind(
+			wl_registry,
+			name,
+			&wl_compositor_interface,
+			version);
+	}
+	else if (strcmp(interface, wl_shm_interface.name) == 0) {
+		wl_shm = wl_registry_bind(
+			wl_registry,
+			name,
+			&wl_shm_interface,
+			version);
+	}
+	else if (strcmp(interface, xdg_shell_interface.name) == 0) {
+		xdg_shell = wl_registry_bind(
+			wl_registry,
+			name,
+			&xdg_shell_interface,
+			version);
+	}
 }
 
 static void global_remove(void *data,
                           struct wl_registry *wl_registry,
-                          uint32_t name) {}
+                          uint32_t name)
+{
+}
 
 static void ping(void *data, struct xdg_shell *xdg_shell, uint32_t serial)
 {
-    xdg_shell_pong(xdg_shell, serial);
+	xdg_shell_pong(xdg_shell, serial);
 }
 
 static void xs_configure(void *data,
@@ -77,7 +82,7 @@ static void xs_configure(void *data,
                          struct wl_array *states,
                          uint32_t serial)
 {
-    xdg_surface_ack_configure(xdg_surface, serial);
+	xdg_surface_ack_configure(xdg_surface, serial);
 }
 
 static void xs_close(void *data, struct xdg_surface *xdg_surface)
@@ -121,111 +126,110 @@ static struct xdg_surface_listener xdg_surface_listener = {xs_configure, xs_clos
 
 void *wayland_start(void *arg)
 {
-    struct wl_display *wl_display = wl_display_connect(NULL);
-    if (wl_display == NULL) {
-        printf("wl_display failed\n");
-        set_exit_code(2);
-        return NULL;
-    }
-    struct wl_registry *wl_registry = wl_display_get_registry(wl_display);
-    if (wl_registry == NULL) {
-        printf("wl_registry failed\n");
-    }
+	struct wl_display *wl_display = wl_display_connect(NULL);
+	if (wl_display == NULL) {
+		printf("wl_display failed\n");
+		set_exit_code(2);
+		return NULL;
+	}
+	struct wl_registry *wl_registry = wl_display_get_registry(wl_display);
+	if (wl_registry == NULL) {
+		printf("wl_registry failed\n");
+	}
 
-    wl_registry_add_listener(wl_registry, &registry_listener, NULL);
-    wl_display_dispatch(wl_display);
-    if (wl_compositor == NULL) {
-        printf("wl_compositor failed\n");
-    }
-    if (wl_shm == NULL) {
-        printf("wl_shm failed\n");
-    }
-    if (xdg_shell == NULL) {
-        printf("xdg_shell failed\n");
-    }
-    xdg_shell_add_listener(xdg_shell, &xdg_shell_listener, NULL);
-    xdg_shell_use_unstable_version(xdg_shell, XDG_SHELL_VERSION_CURRENT);
+	wl_registry_add_listener(wl_registry, &registry_listener, NULL);
+	wl_display_dispatch(wl_display);
+	if (wl_compositor == NULL) {
+		printf("wl_compositor failed\n");
+	}
+	if (wl_shm == NULL) {
+		printf("wl_shm failed\n");
+	}
+	if (xdg_shell == NULL) {
+		printf("xdg_shell failed\n");
+	}
+	xdg_shell_add_listener(xdg_shell, &xdg_shell_listener, NULL);
+	xdg_shell_use_unstable_version(xdg_shell, XDG_SHELL_VERSION_CURRENT);
 
-    int fd = syscall(SYS_memfd_create, "wayland-app", MFD_CLOEXEC | MFD_ALLOW_SEALING);
-    if (fd == -1) {
-        goto fd_fail;
-    }
-    const int32_t WIDTH = 300;
-    const int32_t STRIDE = WIDTH * sizeof(int32_t);
-    const int32_t HEIGHT = 200;
-    const int32_t CAPACITY = STRIDE * HEIGHT;
-    ftruncate(fd, CAPACITY * 2);
-    uint32_t *pixels = mmap(NULL, CAPACITY * 2, PROT_WRITE | PROT_READ, MAP_SHARED, fd, 0);
+	int fd = syscall(SYS_memfd_create, "irc-client", MFD_CLOEXEC | MFD_ALLOW_SEALING);
+	if (fd == -1) {
+		goto fd_fail;
+	}
+	const int32_t WIDTH = 300;
+	const int32_t STRIDE = WIDTH * sizeof(int32_t);
+	const int32_t HEIGHT = 200;
+	const int32_t CAPACITY = STRIDE * HEIGHT;
+	ftruncate(fd, CAPACITY * 2);
+	uint32_t *pixels = mmap(NULL, CAPACITY * 2, PROT_WRITE | PROT_READ, MAP_SHARED, fd, 0);
 
-    cairo_surface_t *surface_1 = cairo_image_surface_create_for_data(
-        (unsigned char *)pixels,
-        CAIRO_FORMAT_ARGB32, WIDTH, HEIGHT, STRIDE);
-    cairo_surface_t *surface_2 = cairo_image_surface_create_for_data(
-        (unsigned char *)pixels + CAPACITY,
-        CAIRO_FORMAT_ARGB32, WIDTH, HEIGHT, STRIDE);
+	cairo_surface_t *surface_1 = cairo_image_surface_create_for_data(
+		(unsigned char *)pixels,
+		CAIRO_FORMAT_ARGB32, WIDTH, HEIGHT, STRIDE);
+	cairo_surface_t *surface_2 = cairo_image_surface_create_for_data(
+		(unsigned char *)pixels + CAPACITY,
+		CAIRO_FORMAT_ARGB32, WIDTH, HEIGHT, STRIDE);
 
-    cairo_t *cr_1 = cairo_create(surface_1);
-    cairo_t *cr_2 = cairo_create(surface_2);
+	cairo_t *cr_1 = cairo_create(surface_1);
+	cairo_t *cr_2 = cairo_create(surface_2);
 
-    struct wl_surface *wl_surface = wl_compositor_create_surface(wl_compositor);
-    if (wl_surface == NULL) {
-        printf("wl_surface failed\n");
-    }
-    struct xdg_surface *xdg_surface = xdg_shell_get_xdg_surface(xdg_shell, wl_surface);
-    if (xdg_surface == NULL) {
-        printf("xdg_surface failed\n");
-    }
-    xdg_surface_add_listener(xdg_surface, &xdg_surface_listener, NULL);
-    xdg_surface_set_title(xdg_surface, "Hello");
-    xdg_surface_set_window_geometry(xdg_surface, 10, 10, WIDTH, HEIGHT);
-    struct wl_shm_pool *wl_shm_pool = wl_shm_create_pool(wl_shm, fd, CAPACITY * 2);
-    struct wl_buffer *wl_buffer_1 = wl_shm_pool_create_buffer(wl_shm_pool, 0,
-                                                              WIDTH, HEIGHT, STRIDE,
-                                                              WL_SHM_FORMAT_ARGB8888);
-    struct wl_buffer *wl_buffer_2 = wl_shm_pool_create_buffer(wl_shm_pool, CAPACITY,
-                                                              WIDTH, HEIGHT, STRIDE,
-                                                              WL_SHM_FORMAT_ARGB8888);
+	struct wl_surface *wl_surface = wl_compositor_create_surface(wl_compositor);
+	if (wl_surface == NULL) {
+		printf("wl_surface failed\n");
+	}
+	struct xdg_surface *xdg_surface = xdg_shell_get_xdg_surface(xdg_shell, wl_surface);
+	if (xdg_surface == NULL) {
+		printf("xdg_surface failed\n");
+	}
+	xdg_surface_add_listener(xdg_surface, &xdg_surface_listener, NULL);
+	xdg_surface_set_title(xdg_surface, "Hello");
+	xdg_surface_set_maximized(xdg_surface);
+	xdg_surface_set_window_geometry(xdg_surface, 10, 10, WIDTH, HEIGHT);
+	struct wl_shm_pool *wl_shm_pool = wl_shm_create_pool(wl_shm, fd, CAPACITY * 2);
+	struct wl_buffer *wl_buffer_1 = wl_shm_pool_create_buffer(wl_shm_pool, 0,
+		WIDTH, HEIGHT, STRIDE,
+		WL_SHM_FORMAT_ARGB8888);
+	struct wl_buffer *wl_buffer_2 = wl_shm_pool_create_buffer(wl_shm_pool, CAPACITY,
+		WIDTH, HEIGHT, STRIDE,
+		WL_SHM_FORMAT_ARGB8888);
 
+	cairo_t* current_cr = cr_1;
+	struct wl_buffer* current_wl_buffer = wl_buffer_1;
+	while (1) {
+		draw(current_cr);
+		wl_surface_attach(wl_surface, current_wl_buffer, 0, 0);
+		wl_surface_commit(wl_surface);
+		wl_surface_damage(wl_surface, 0, 0, WIDTH, HEIGHT);
+		if (current_cr == cr_1) {
+			current_cr = cr_2;
+			current_wl_buffer = wl_buffer_2;
+		}
+		else {
+			current_cr = cr_1;
+			current_wl_buffer = wl_buffer_1;
+		}
+		wl_display_roundtrip(wl_display);
+		if (is_exiting()) {
+			break;
+		}
+	}
 
+	cairo_destroy(cr_2);
+	cairo_surface_destroy(surface_2);
+	cairo_destroy(cr_1);
+	cairo_surface_destroy(surface_1);
+	wl_buffer_destroy(wl_buffer_2);
+	wl_buffer_destroy(wl_buffer_1);
+	wl_shm_pool_destroy(wl_shm_pool);
+	xdg_surface_destroy(xdg_surface);
+	wl_surface_destroy(wl_surface);
+	munmap(pixels, CAPACITY);
+	close(fd);
 
-    cairo_t* current_cr = cr_1;
-    struct wl_buffer* current_wl_buffer = wl_buffer_1;
-    while (1) {
-        draw(current_cr);
-        wl_surface_attach(wl_surface, current_wl_buffer, 0, 0);
-        wl_surface_commit(wl_surface);
-        wl_surface_damage(wl_surface, 0, 0, WIDTH, HEIGHT);
-        if (current_cr == cr_1) {
-            current_cr = cr_2;
-            current_wl_buffer = wl_buffer_2;
-        }
-        else {
-            current_cr = cr_1;
-            current_wl_buffer = wl_buffer_1;
-        }
-        wl_display_roundtrip(wl_display);
-        if (is_exiting()) {
-            break;
-        }
-    }
-
-    cairo_destroy(cr_2);
-    cairo_surface_destroy(surface_2);
-    cairo_destroy(cr_1);
-    cairo_surface_destroy(surface_1);
-    wl_buffer_destroy(wl_buffer_2);
-    wl_buffer_destroy(wl_buffer_1);
-    wl_shm_pool_destroy(wl_shm_pool);
-    xdg_surface_destroy(xdg_surface);
-    wl_surface_destroy(wl_surface);
-    munmap(pixels, CAPACITY);
-    close(fd);
-
- fd_fail:
-    xdg_shell_destroy(xdg_shell);
-    wl_shm_destroy(wl_shm);
-    wl_compositor_destroy(wl_compositor);
-    wl_registry_destroy(wl_registry);
-    wl_display_disconnect(wl_display);
-    return NULL;
+fd_fail:
+	xdg_shell_destroy(xdg_shell);
+	wl_shm_destroy(wl_shm);
+	wl_compositor_destroy(wl_compositor);
+	wl_registry_destroy(wl_registry);
+	wl_display_disconnect(wl_display);
+	return NULL;
 }
