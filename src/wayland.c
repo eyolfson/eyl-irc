@@ -181,7 +181,7 @@ void *wayland_start(void *arg)
 		printf("xdg_surface failed\n");
 	}
 	xdg_surface_add_listener(xdg_surface, &xdg_surface_listener, NULL);
-	xdg_surface_set_title(xdg_surface, "Hello");
+	xdg_surface_set_title(xdg_surface, "IRC Client");
 	xdg_surface_set_maximized(xdg_surface);
 	xdg_surface_set_window_geometry(xdg_surface, 10, 10, WIDTH, HEIGHT);
 	struct wl_shm_pool *wl_shm_pool = wl_shm_create_pool(wl_shm, fd, CAPACITY * 2);
