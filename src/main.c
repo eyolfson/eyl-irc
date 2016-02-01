@@ -48,13 +48,21 @@ void run_threads()
 	}
 }
 
-int main(int argc, char **argv)
+bool print_version(int argc, char **argv)
 {
 	for (int i = 1; i < argc; ++i) {
 		if (strcmp(argv[i], "--version") == 0) {
 			printf("IRC Client 0.0.1-development\n");
-			return 0;
+			return true;
 		}
+	}
+	return false;
+}
+
+int main(int argc, char **argv)
+{
+	if (print_version(argc, argv)) {
+		return 0;
 	}
 
 	if (argc != 3) {
