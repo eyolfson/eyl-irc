@@ -35,6 +35,9 @@ static struct wl_compositor *wl_compositor = NULL;
 static struct wl_shm *wl_shm = NULL;
 static struct xdg_shell *xdg_shell = NULL;
 
+static int32_t current_width;
+static int32_t current_height;
+
 static void global(void *data,
                    struct wl_registry *wl_registry,
                    uint32_t name,
@@ -82,6 +85,8 @@ static void xs_configure(void *data,
                          struct wl_array *states,
                          uint32_t serial)
 {
+	current_width = width;
+	current_height = height;
 	xdg_surface_ack_configure(xdg_surface, serial);
 }
 
@@ -183,7 +188,9 @@ void *wayland_start(void *arg)
 	xdg_surface_add_listener(xdg_surface, &xdg_surface_listener, NULL);
 	xdg_surface_set_title(xdg_surface, "IRC Client");
 	xdg_surface_set_maximized(xdg_surface);
-	xdg_surface_set_window_geometry(xdg_surface, 10, 10, WIDTH, HEIGHT);
+	wl_display_roundtrip(wl_display);
+
+	xdg_surface_set_window_geometry(xdg_surface, 0, 0, WIDTH, HEIGHT);
 	struct wl_shm_pool *wl_shm_pool = wl_shm_create_pool(wl_shm, fd, CAPACITY * 2);
 	struct wl_buffer *wl_buffer_1 = wl_shm_pool_create_buffer(wl_shm_pool, 0,
 		WIDTH, HEIGHT, STRIDE,
