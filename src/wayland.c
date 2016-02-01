@@ -115,6 +115,7 @@ static void draw(cairo_t *cr)
 		CAIRO_FONT_SLANT_NORMAL,
 		CAIRO_FONT_WEIGHT_BOLD);
 	cairo_set_font_size(cr, 13);
+	cairo_scale(cr, 2.0, 2.0);
 
 	cairo_set_source_rgb(cr, 0.514, 0.580, 0.589);
 	cairo_move_to(cr, 20, 30);
@@ -123,6 +124,7 @@ static void draw(cairo_t *cr)
 	cairo_set_source_rgb(cr, 0.149, 0.545, 0.824);
 	cairo_move_to(cr, 20, 50);
 	cairo_show_text(cr, buffer);
+	cairo_identity_matrix(cr);
 }
 
 static struct wl_registry_listener registry_listener = {global, global_remove};
