@@ -40,29 +40,100 @@ static int32_t current_width;
 static int32_t current_height;
 
 struct buffer {
-	struct wl_shm_pool *wl_shm_pool;
-	struct wl_buffer *wl_buffer;
-	cairo_surface_t *cairo_surface;
-	cairo_t *cairo;
 	int32_t fd;
 	uint32_t *data;
-	int32_t capacity;
 	int32_t width;
 	int32_t stride;
 	int32_t height;
+	int32_t capacity;
+	cairo_surface_t *cairo_surface;
+	cairo_t *cairo;
+	struct wl_shm_pool *wl_shm_pool;
+	struct wl_buffer *wl_buffer;
 };
 
 struct buffer buffers[2] = {{0}, {0}};
-struct buffer *buffer = &buffers[0];
+struct buffer *back_buffer = &buffers[0];
 
 void swap_buffers()
 {
-	if (buffer == &buffers[0]) {
-		buffer = &buffers[1];
+	if (back_buffer == &buffers[0]) {
+		back_buffer = &buffers[1];
 	}
 	else {
-		buffer = &buffers[0];
+		back_buffer = &buffers[0];
 	}
+}
+
+void init_buffer(struct buffer *buffer)
+{
+	buffer->fd = syscall(
+		SYS_memfd_create, "irc-client", MFD_CLOEXEC | MFD_ALLOW_SEALING
+	);
+	if (buffer->fd < 0) {
+		set_exit_code(1);
+		return;
+	}
+	buffer->width = current_width;
+	buffer->stride = buffer->width * sizeof(uint32_t);
+	buffer->height = current_height;
+	buffer->capacity = buffer->stride * buffer->height;
+	if (ftruncate(buffer->fd, buffer->capacity) < 0) {
+		set_exit_code(1);
+		close(buffer->fd);
+		return;
+	}
+	buffer->data = mmap(
+		NULL, buffer->capacity, PROT_WRITE | PROT_READ, MAP_SHARED,
+		buffer->fd, 0
+	);
+	if (buffer->data == MAP_FAILED) {
+		set_exit_code(1);
+		close(buffer->fd);
+		return;
+	}
+	buffer->cairo_surface = cairo_image_surface_create_for_data(
+		(unsigned char *) buffer->data, CAIRO_FORMAT_ARGB32,
+		buffer->width, buffer->height, buffer->stride
+	);
+	buffer->cairo = cairo_create(buffer->cairo_surface);
+
+	buffer->wl_shm_pool = wl_shm_create_pool(wl_shm, buffer->fd, buffer->capacity);
+	buffer->wl_buffer = wl_shm_pool_create_buffer(
+		buffer->wl_shm_pool, 0, buffer->width, buffer->height,
+		buffer->stride, WL_SHM_FORMAT_ARGB8888
+	);
+}
+
+void init_buffers()
+{
+	if (current_width == 0 || current_height == 0) {
+		set_exit_code(1);
+		return;
+	}
+
+	init_buffer(&buffers[0]);
+	if (is_exiting()) {
+		return;
+	}
+
+	init_buffer(&buffers[1]);
+}
+
+void fini_buffer(struct buffer *buffer)
+{
+	cairo_destroy(buffer->cairo);
+	cairo_surface_destroy(buffer->cairo_surface);
+	wl_buffer_destroy(buffer->wl_buffer);
+	wl_shm_pool_destroy(buffer->wl_shm_pool);
+	munmap(buffer->data, buffer->capacity);
+	close(buffer->fd);
+}
+
+void fini_buffers()
+{
+	fini_buffer(&buffers[0]);
+	fini_buffer(&buffers[1]);
 }
 
 static void global(void *data,
@@ -139,7 +210,6 @@ static void draw(cairo_t *cr)
 		CAIRO_FONT_SLANT_NORMAL,
 		CAIRO_FONT_WEIGHT_BOLD);
 	cairo_set_font_size(cr, 13);
-	cairo_scale(cr, 2.0, 2.0);
 
 	cairo_set_source_rgb(cr, 0.514, 0.580, 0.589);
 	cairo_move_to(cr, 20, 30);
@@ -185,32 +255,11 @@ void *wayland_start(void *arg)
 	xdg_shell_add_listener(xdg_shell, &xdg_shell_listener, NULL);
 	xdg_shell_use_unstable_version(xdg_shell, XDG_SHELL_VERSION_CURRENT);
 
-	int fd = syscall(SYS_memfd_create, "irc-client", MFD_CLOEXEC | MFD_ALLOW_SEALING);
-	if (fd == -1) {
-		goto fd_fail;
-	}
-	const int32_t WIDTH = 300;
-	const int32_t STRIDE = WIDTH * sizeof(int32_t);
-	const int32_t HEIGHT = 200;
-	const int32_t CAPACITY = STRIDE * HEIGHT;
-	ftruncate(fd, CAPACITY * 2);
-	uint32_t *pixels = mmap(NULL, CAPACITY * 2, PROT_WRITE | PROT_READ, MAP_SHARED, fd, 0);
-
-	cairo_surface_t *surface_1 = cairo_image_surface_create_for_data(
-		(unsigned char *)pixels,
-		CAIRO_FORMAT_ARGB32, WIDTH, HEIGHT, STRIDE);
-	cairo_surface_t *surface_2 = cairo_image_surface_create_for_data(
-		(unsigned char *)pixels + CAPACITY,
-		CAIRO_FORMAT_ARGB32, WIDTH, HEIGHT, STRIDE);
-
-	cairo_t *cr_1 = cairo_create(surface_1);
-	cairo_t *cr_2 = cairo_create(surface_2);
-
 	struct wl_surface *wl_surface = wl_compositor_create_surface(wl_compositor);
 	if (wl_surface == NULL) {
 		printf("wl_surface failed\n");
 	}
-	struct xdg_surface *xdg_surface = xdg_shell_get_xdg_surface(xdg_shell, wl_surface);
+	xdg_surface = xdg_shell_get_xdg_surface(xdg_shell, wl_surface);
 	if (xdg_surface == NULL) {
 		printf("xdg_surface failed\n");
 	}
@@ -219,49 +268,34 @@ void *wayland_start(void *arg)
 	xdg_surface_set_maximized(xdg_surface);
 	wl_display_roundtrip(wl_display); /* Get width and height */
 
-	struct wl_shm_pool *wl_shm_pool = wl_shm_create_pool(wl_shm, fd, CAPACITY * 2);
-	struct wl_buffer *wl_buffer_1 = wl_shm_pool_create_buffer(wl_shm_pool, 0,
-		WIDTH, HEIGHT, STRIDE,
-		WL_SHM_FORMAT_ARGB8888);
-	struct wl_buffer *wl_buffer_2 = wl_shm_pool_create_buffer(wl_shm_pool, CAPACITY,
-		WIDTH, HEIGHT, STRIDE,
-		WL_SHM_FORMAT_ARGB8888);
+	init_buffers();
+	if (is_exiting()) {
+		return NULL;
+	}
 
-	cairo_t* current_cr = cr_1;
-	struct wl_buffer* current_wl_buffer = wl_buffer_1;
 	while (1) {
-		draw(current_cr);
-		wl_surface_attach(wl_surface, current_wl_buffer, 0, 0);
+		draw(back_buffer->cairo);
+
+		wl_surface_attach(wl_surface, back_buffer->wl_buffer, 0, 0);
 		wl_surface_commit(wl_surface);
-		wl_surface_damage(wl_surface, 0, 0, WIDTH, HEIGHT);
-		xdg_surface_set_window_geometry(xdg_surface, 0, 0, WIDTH, HEIGHT);
-		if (current_cr == cr_1) {
-			current_cr = cr_2;
-			current_wl_buffer = wl_buffer_2;
-		}
-		else {
-			current_cr = cr_1;
-			current_wl_buffer = wl_buffer_1;
-		}
+		wl_surface_damage(wl_surface, 0, 0, back_buffer->width, back_buffer->height);
+		xdg_surface_set_window_geometry(xdg_surface,
+			0, 0, back_buffer->width, back_buffer->height);
+
+		swap_buffers();
+
 		wl_display_roundtrip(wl_display);
 		if (is_exiting()) {
 			break;
 		}
+		/* TODO: resize back buffer */
 	}
 
-	cairo_destroy(cr_2);
-	cairo_surface_destroy(surface_2);
-	cairo_destroy(cr_1);
-	cairo_surface_destroy(surface_1);
-	wl_buffer_destroy(wl_buffer_2);
-	wl_buffer_destroy(wl_buffer_1);
-	wl_shm_pool_destroy(wl_shm_pool);
+	fini_buffers();
+
 	xdg_surface_destroy(xdg_surface);
 	wl_surface_destroy(wl_surface);
-	munmap(pixels, CAPACITY);
-	close(fd);
 
-fd_fail:
 	xdg_shell_destroy(xdg_shell);
 	wl_shm_destroy(wl_shm);
 	wl_compositor_destroy(wl_compositor);
