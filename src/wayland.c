@@ -34,9 +34,36 @@
 static struct wl_compositor *wl_compositor = NULL;
 static struct wl_shm *wl_shm = NULL;
 static struct xdg_shell *xdg_shell = NULL;
+static struct xdg_surface *xdg_surface = NULL;
 
 static int32_t current_width;
 static int32_t current_height;
+
+struct buffer {
+	struct wl_shm_pool *wl_shm_pool;
+	struct wl_buffer *wl_buffer;
+	cairo_surface_t *cairo_surface;
+	cairo_t *cairo;
+	int32_t fd;
+	uint32_t *data;
+	int32_t capacity;
+	int32_t width;
+	int32_t stride;
+	int32_t height;
+};
+
+struct buffer buffers[2] = {{0}, {0}};
+struct buffer *buffer = &buffers[0];
+
+void swap_buffers()
+{
+	if (buffer == &buffers[0]) {
+		buffer = &buffers[1];
+	}
+	else {
+		buffer = &buffers[0];
+	}
+}
 
 static void global(void *data,
                    struct wl_registry *wl_registry,
@@ -190,9 +217,8 @@ void *wayland_start(void *arg)
 	xdg_surface_add_listener(xdg_surface, &xdg_surface_listener, NULL);
 	xdg_surface_set_title(xdg_surface, "IRC Client");
 	xdg_surface_set_maximized(xdg_surface);
-	wl_display_roundtrip(wl_display);
+	wl_display_roundtrip(wl_display); /* Get width and height */
 
-	xdg_surface_set_window_geometry(xdg_surface, 0, 0, WIDTH, HEIGHT);
 	struct wl_shm_pool *wl_shm_pool = wl_shm_create_pool(wl_shm, fd, CAPACITY * 2);
 	struct wl_buffer *wl_buffer_1 = wl_shm_pool_create_buffer(wl_shm_pool, 0,
 		WIDTH, HEIGHT, STRIDE,
@@ -208,6 +234,7 @@ void *wayland_start(void *arg)
 		wl_surface_attach(wl_surface, current_wl_buffer, 0, 0);
 		wl_surface_commit(wl_surface);
 		wl_surface_damage(wl_surface, 0, 0, WIDTH, HEIGHT);
+		xdg_surface_set_window_geometry(xdg_surface, 0, 0, WIDTH, HEIGHT);
 		if (current_cr == cr_1) {
 			current_cr = cr_2;
 			current_wl_buffer = wl_buffer_2;
