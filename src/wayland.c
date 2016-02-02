@@ -78,19 +78,16 @@ static void ping(void *data, struct xdg_shell *xdg_shell, uint32_t serial)
 	xdg_shell_pong(xdg_shell, serial);
 }
 
-static void xs_configure(void *data,
-                         struct xdg_surface *xdg_surface,
-                         int32_t width,
-                         int32_t height,
-                         struct wl_array *states,
-                         uint32_t serial)
+static void xdg_surface_configure(
+	void *data, struct xdg_surface *xdg_surface, int32_t width,
+	int32_t height, struct wl_array *states, uint32_t serial)
 {
 	current_width = width;
 	current_height = height;
 	xdg_surface_ack_configure(xdg_surface, serial);
 }
 
-static void xs_close(void *data, struct xdg_surface *xdg_surface)
+static void xdg_surface_close(void *data, struct xdg_surface *xdg_surface)
 {
 }
 
@@ -129,7 +126,10 @@ static void draw(cairo_t *cr)
 
 static struct wl_registry_listener registry_listener = {global, global_remove};
 static struct xdg_shell_listener xdg_shell_listener = {ping};
-static struct xdg_surface_listener xdg_surface_listener = {xs_configure, xs_close};
+static struct xdg_surface_listener xdg_surface_listener = {
+	xdg_surface_configure,
+	xdg_surface_close
+};
 
 void *wayland_start(void *arg)
 {
