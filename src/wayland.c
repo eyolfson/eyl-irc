@@ -206,6 +206,10 @@ static void draw(cairo_t *cr)
 	cairo_rectangle(cr, 10, 10, 280, 180);
 	cairo_stroke(cr);
 
+	cairo_arc(cr, 330, 60, 40, 0, 2*M_PI);
+	cairo_close_path(cr);
+	cairo_stroke(cr);
+
 	cairo_select_font_face(cr, "Cousine",
 		CAIRO_FONT_SLANT_NORMAL,
 		CAIRO_FONT_WEIGHT_BOLD);
