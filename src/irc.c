@@ -104,18 +104,18 @@ irc_status_t get_irc_status()
 
 int32_t irc_handle_message(uint8_t *data, uint16_t length)
 {
+	printf("DEBUG|");
+	for (uint16_t i = 0; i < (length - 2); ++i) {
+		putchar(data[i]);
+	}
+	putchar('\n');
+
 	if (length >= 4 && strncmp(data, "PING", 4) == 0) {
 		data[1] = 'O';
 		if (write(server_fd, data, length) < 0) {
 			return 1;
 		}
 	}
-
-	printf("DEBUG|");
-	for (uint16_t i = 0; i < (length - 2); ++i) {
-		putchar(data[i]);
-	}
-	putchar('\n');
 
 	return 0;
 }
