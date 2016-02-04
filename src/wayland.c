@@ -75,9 +75,11 @@ void init_buffer(struct buffer *buffer)
 		set_exit_code(1);
 		return;
 	}
-	buffer->width = current_width;
+	/* buffer->width = current_width; */
+	buffer->width = current_width / 2;
 	buffer->stride = buffer->width * sizeof(uint32_t);
-	buffer->height = current_height;
+	/* buffer->height = current_height; */
+	buffer->height = current_height / 2;
 	buffer->capacity = buffer->stride * buffer->height;
 	if (ftruncate(buffer->fd, buffer->capacity) < 0) {
 		set_exit_code(1);
@@ -282,6 +284,7 @@ void *wayland_start(void *arg)
 	xdg_surface_set_title(xdg_surface, "IRC Client");
 	xdg_surface_set_maximized(xdg_surface);
 	wl_display_roundtrip(wl_display); /* Get width and height */
+	xdg_surface_unset_maximized(xdg_surface);
 
 	init_buffers();
 	if (is_exiting()) {
