@@ -23,8 +23,16 @@
 extern "C" {
 #endif
 
+typedef enum {
+	IRC_STATUS_DISCONNECTED,
+	IRC_STATUS_CONNECTING,
+	IRC_STATUS_CONNECTED,
+} irc_status_t;
+
 void *irc_start(void *arg);
 void irc_finish();
+
+irc_status_t get_irc_status();
 
 void irc_connect(const uint8_t *host, const uint8_t *nick);
 

@@ -29,6 +29,7 @@
 #include <wayland-client-protocol.h>
 #include "xdg_shell.h"
 
+#include "irc.h"
 #include "exit_code.h"
 
 static struct wl_compositor *wl_compositor = NULL;
@@ -217,7 +218,17 @@ static void draw(cairo_t *cr)
 
 	cairo_set_source_rgb(cr, 0.514, 0.580, 0.589);
 	cairo_move_to(cr, 20, 30);
-	cairo_show_text(cr, "Connecting..");
+  switch (get_irc_status()) {
+	case IRC_STATUS_DISCONNECTED:
+		cairo_show_text(cr, "Disconnected");
+		break;
+	case IRC_STATUS_CONNECTING:
+		cairo_show_text(cr, "Connecting");
+		break;
+	case IRC_STATUS_CONNECTED:
+		cairo_show_text(cr, "Connected");
+		break;
+	}
 
 	cairo_set_source_rgb(cr, 0.149, 0.545, 0.824);
 	cairo_move_to(cr, 20, 50);

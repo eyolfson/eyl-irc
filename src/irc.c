@@ -27,6 +27,7 @@
 static const int16_t MESSAGE_LENGTH_MAX = 512;
 
 static int32_t server_fd = -1;
+static irc_status_t status = IRC_STATUS_DISCONNECTED;
 
 static void send_nick(const uint8_t *nick)
 {
@@ -84,12 +85,21 @@ static void connect_server_fd(const uint8_t *host)
 }
 void irc_connect(const uint8_t *host, const uint8_t *nick)
 {
+	status = IRC_STATUS_CONNECTING;
+
 	connect_server_fd(host);
 	if (is_exiting()) {
 		return;
 	}
 
 	send_nick(nick);
+
+	status = IRC_STATUS_CONNECTED;
+}
+
+irc_status_t get_irc_status()
+{
+	return status;
 }
 
 int32_t irc_handle_message(uint8_t *data, uint16_t length)
