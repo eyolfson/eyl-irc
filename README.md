@@ -5,7 +5,7 @@ A primitive form of communication.
 ## Design
 
 We target the Wayland protocol. Therefore, this software only runs on modern
-Linux.
+Linux distributions.
 
 ## License
 
