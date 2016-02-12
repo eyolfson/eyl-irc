@@ -15,6 +15,8 @@
  * this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
+#define _GNU_SOURCE
+
 #include <linux/memfd.h>
 #include <stdio.h>
 #include <string.h>
@@ -32,13 +34,14 @@
 #include "irc.h"
 #include "exit_code.h"
 
+static struct wl_display *wl_display = NULL;
 static struct wl_compositor *wl_compositor = NULL;
 static struct wl_shm *wl_shm = NULL;
 static struct xdg_shell *xdg_shell = NULL;
 static struct xdg_surface *xdg_surface = NULL;
 
-static int32_t current_width;
-static int32_t current_height;
+static int32_t current_width = 300;
+static int32_t current_height = 200;
 
 struct buffer {
 	int32_t fd;
@@ -123,6 +126,60 @@ void init_buffers()
 	init_buffer(&buffers[1]);
 }
 
+static void maybe_resize_buffer(struct buffer *buffer)
+{
+	int32_t current_stride = current_width * sizeof(uint32_t);
+	int32_t current_capacity = current_stride * current_height;
+
+	if (buffer->capacity < current_capacity) {
+		if (ftruncate(buffer->fd, current_capacity) < 0) {
+			set_exit_code(1);
+			close(buffer->fd);
+			// TODO: this isn't complete in the resize case
+			return;
+		}
+		buffer->data = mremap(
+			buffer->data, buffer->capacity, current_capacity,
+			MREMAP_MAYMOVE
+		);
+		if (buffer->data == MAP_FAILED) {
+			set_exit_code(1);
+			close(buffer->fd);
+			// TODO: this isn't complete in the resize case
+		}
+		buffer->capacity = current_capacity;
+		wl_shm_pool_resize(buffer->wl_shm_pool, buffer->capacity);
+	}
+
+	buffer->width = current_width;
+	buffer->stride = current_stride;
+	buffer->height = current_height;
+
+	cairo_destroy(buffer->cairo);
+	cairo_surface_destroy(buffer->cairo_surface);
+
+	buffer->cairo_surface = cairo_image_surface_create_for_data(
+		(unsigned char *) buffer->data, CAIRO_FORMAT_ARGB32,
+		buffer->width, buffer->height, buffer->stride
+	);
+	if (cairo_surface_status(buffer->cairo_surface) != 0) {
+		set_exit_code(3);
+		return;
+	}
+
+	buffer->cairo = cairo_create(buffer->cairo_surface);
+	if (cairo_status(buffer->cairo) != 0) {
+		set_exit_code(3);
+		return;
+	}
+
+	wl_buffer_destroy(buffer->wl_buffer);
+	buffer->wl_buffer = wl_shm_pool_create_buffer(
+		buffer->wl_shm_pool, 0, buffer->width, buffer->height,
+		buffer->stride, WL_SHM_FORMAT_ARGB8888
+	);
+}
+
 void fini_buffer(struct buffer *buffer)
 {
 	cairo_destroy(buffer->cairo);
@@ -183,8 +240,12 @@ static void xdg_surface_configure(
 	void *data, struct xdg_surface *xdg_surface, int32_t width,
 	int32_t height, struct wl_array *states, uint32_t serial)
 {
-	current_width = width;
-	current_height = height;
+	if (width != 0) {
+		current_width = width;
+	}
+	if (height != 0) {
+		current_height = height;
+	}
 	xdg_surface_ack_configure(xdg_surface, serial);
 }
 
@@ -201,7 +262,6 @@ static void draw(cairo_t *cr)
 	localtime_r(&timespec.tv_sec, &tm);
 	sprintf(buffer, "%02d:%02d:%02d.%03ld",
 		tm.tm_hour, tm.tm_min, tm.tm_sec, timespec.tv_nsec / 1000000);
-
 	cairo_set_source_rgb(cr, 0, 0.169, 0.212);
 	cairo_paint(cr);
 	cairo_set_line_width(cr, 1);
@@ -247,7 +307,7 @@ static struct xdg_surface_listener xdg_surface_listener = {
 
 void *wayland_start(void *arg)
 {
-	struct wl_display *wl_display = wl_display_connect(NULL);
+	wl_display = wl_display_connect(NULL);
 	if (wl_display == NULL) {
 		printf("wl_display failed\n");
 		set_exit_code(2);
@@ -283,7 +343,6 @@ void *wayland_start(void *arg)
 	xdg_surface_add_listener(xdg_surface, &xdg_surface_listener, NULL);
 	xdg_surface_set_title(xdg_surface, "IRC Client");
 	xdg_surface_set_maximized(xdg_surface);
-	wl_display_roundtrip(wl_display); /* Get width and height */
 	xdg_surface_unset_maximized(xdg_surface);
 
 	init_buffers();
@@ -292,6 +351,8 @@ void *wayland_start(void *arg)
 	}
 
 	while (1) {
+		maybe_resize_buffer(back_buffer);
+
 		draw(back_buffer->cairo);
 
 		wl_surface_attach(wl_surface, back_buffer->wl_buffer, 0, 0);
