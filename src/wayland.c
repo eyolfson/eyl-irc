@@ -262,8 +262,10 @@ static void draw(cairo_t *cr)
 	localtime_r(&timespec.tv_sec, &tm);
 	sprintf(buffer, "%02d:%02d:%02d.%03ld",
 		tm.tm_hour, tm.tm_min, tm.tm_sec, timespec.tv_nsec / 1000000);
+
 	cairo_set_source_rgb(cr, 0, 0.169, 0.212);
 	cairo_paint(cr);
+
 	cairo_set_line_width(cr, 1);
 	cairo_set_source_rgb(cr, 0.345, 0.431, 0.459);
 	cairo_rectangle(cr, 10, 10, 280, 180);
@@ -280,7 +282,7 @@ static void draw(cairo_t *cr)
 
 	cairo_set_source_rgb(cr, 0.514, 0.580, 0.589);
 	cairo_move_to(cr, 20, 30);
-  switch (get_irc_status()) {
+	switch (get_irc_status()) {
 	case IRC_STATUS_DISCONNECTED:
 		cairo_show_text(cr, "Disconnected");
 		break;
@@ -295,6 +297,7 @@ static void draw(cairo_t *cr)
 	cairo_set_source_rgb(cr, 0.149, 0.545, 0.824);
 	cairo_move_to(cr, 20, 50);
 	cairo_show_text(cr, buffer);
+
 	cairo_identity_matrix(cr);
 }
 
@@ -313,6 +316,7 @@ void *wayland_start(void *arg)
 		set_exit_code(2);
 		return NULL;
 	}
+
 	struct wl_registry *wl_registry = wl_display_get_registry(wl_display);
 	if (wl_registry == NULL) {
 		printf("wl_registry failed\n");
