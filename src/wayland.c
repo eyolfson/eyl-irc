@@ -59,7 +59,7 @@ struct buffer {
 struct buffer buffers[2] = {{0}, {0}};
 struct buffer *back_buffer = &buffers[0];
 
-void swap_buffers()
+static void swap_buffers()
 {
 	if (back_buffer == &buffers[0]) {
 		back_buffer = &buffers[1];
@@ -69,7 +69,7 @@ void swap_buffers()
 	}
 }
 
-void init_buffer(struct buffer *buffer)
+static void init_buffer(struct buffer *buffer)
 {
 	buffer->fd = syscall(
 		SYS_memfd_create, "irc-client", MFD_CLOEXEC | MFD_ALLOW_SEALING
@@ -111,7 +111,7 @@ void init_buffer(struct buffer *buffer)
 	);
 }
 
-void init_buffers()
+static void init_buffers()
 {
 	if (current_width == 0 || current_height == 0) {
 		set_exit_code(1);
@@ -180,7 +180,7 @@ static void maybe_resize_buffer(struct buffer *buffer)
 	);
 }
 
-void fini_buffer(struct buffer *buffer)
+static void fini_buffer(struct buffer *buffer)
 {
 	cairo_destroy(buffer->cairo);
 	cairo_surface_destroy(buffer->cairo_surface);
@@ -190,7 +190,7 @@ void fini_buffer(struct buffer *buffer)
 	close(buffer->fd);
 }
 
-void fini_buffers()
+static void fini_buffers()
 {
 	fini_buffer(&buffers[0]);
 	fini_buffer(&buffers[1]);
