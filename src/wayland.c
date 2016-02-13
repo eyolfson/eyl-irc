@@ -346,8 +346,6 @@ void *wayland_start(void *arg)
 	}
 	xdg_surface_add_listener(xdg_surface, &xdg_surface_listener, NULL);
 	xdg_surface_set_title(xdg_surface, "IRC Client");
-	xdg_surface_set_maximized(xdg_surface);
-	xdg_surface_unset_maximized(xdg_surface);
 
 	init_buffers();
 	if (is_exiting()) {
