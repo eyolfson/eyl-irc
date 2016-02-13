@@ -39,6 +39,7 @@ static struct wl_compositor *wl_compositor = NULL;
 static struct wl_shm *wl_shm = NULL;
 static struct xdg_shell *xdg_shell = NULL;
 static struct xdg_surface *xdg_surface = NULL;
+static struct wl_callback *wl_frame_callback = NULL;
 
 static int32_t current_width = 300;
 static int32_t current_height = 200;
@@ -231,6 +232,14 @@ static void global_remove(void *data,
 {
 }
 
+static void frame_callback_done(void *data,
+                                struct wl_callback *wl_callback,
+                                uint32_t milliseconds)
+{
+	wl_callback_destroy(wl_callback);
+	wl_frame_callback = NULL;
+}
+
 static void ping(void *data, struct xdg_shell *xdg_shell, uint32_t serial)
 {
 	xdg_shell_pong(xdg_shell, serial);
@@ -272,6 +281,7 @@ static void draw(cairo_t *cr)
 	cairo_stroke(cr);
 
 	cairo_arc(cr, 330, 60, 40, 0, 2*M_PI);
+
 	cairo_close_path(cr);
 	cairo_stroke(cr);
 
@@ -290,12 +300,14 @@ static void draw(cairo_t *cr)
 		cairo_show_text(cr, "Connecting");
 		break;
 	case IRC_STATUS_CONNECTED:
+
 		cairo_show_text(cr, "Connected");
 		break;
 	}
 
 	cairo_set_source_rgb(cr, 0.149, 0.545, 0.824);
 	cairo_move_to(cr, 20, 50);
+
 	cairo_show_text(cr, buffer);
 
 	cairo_identity_matrix(cr);
@@ -306,6 +318,9 @@ static struct xdg_shell_listener xdg_shell_listener = {ping};
 static struct xdg_surface_listener xdg_surface_listener = {
 	xdg_surface_configure,
 	xdg_surface_close
+};
+static struct wl_callback_listener frame_callback_listener = {
+	frame_callback_done,
 };
 
 void *wayland_start(void *arg)
@@ -356,6 +371,9 @@ void *wayland_start(void *arg)
 		maybe_resize_buffer(back_buffer);
 
 		draw(back_buffer->cairo);
+
+		wl_frame_callback = wl_surface_frame(wl_surface);
+		wl_callback_add_listener(wl_frame_callback, &frame_callback_listener, NULL);
 
 		wl_surface_attach(wl_surface, back_buffer->wl_buffer, 0, 0);
 		wl_surface_commit(wl_surface);
