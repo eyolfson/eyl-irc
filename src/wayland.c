@@ -41,6 +41,7 @@ static struct xdg_shell *xdg_shell = NULL;
 static struct xdg_surface *xdg_surface = NULL;
 static struct wl_callback *wl_frame_callback = NULL;
 
+static bool needs_draw = true;
 static int32_t current_width = 300;
 static int32_t current_height = 200;
 
@@ -236,6 +237,7 @@ static void frame_callback_done(void *data,
                                 struct wl_callback *wl_callback,
                                 uint32_t milliseconds)
 {
+	needs_draw = true;
 	wl_callback_destroy(wl_callback);
 	wl_frame_callback = NULL;
 }
@@ -367,21 +369,33 @@ void *wayland_start(void *arg)
 		return NULL;
 	}
 
+	struct timespec default_sleep_time = {
+		.tv_sec = 0,
+		.tv_nsec = 8333,
+	};
+
 	while (1) {
-		maybe_resize_buffer(back_buffer);
+		if (needs_draw) {
+			maybe_resize_buffer(back_buffer);
 
-		draw(back_buffer->cairo);
+			draw(back_buffer->cairo);
 
-		wl_frame_callback = wl_surface_frame(wl_surface);
-		wl_callback_add_listener(wl_frame_callback, &frame_callback_listener, NULL);
+			wl_frame_callback = wl_surface_frame(wl_surface);
+			wl_callback_add_listener(wl_frame_callback, &frame_callback_listener, NULL);
+			needs_draw = false;
 
-		wl_surface_attach(wl_surface, back_buffer->wl_buffer, 0, 0);
-		wl_surface_commit(wl_surface);
-		wl_surface_damage(wl_surface, 0, 0, back_buffer->width, back_buffer->height);
-		xdg_surface_set_window_geometry(xdg_surface,
-			0, 0, back_buffer->width, back_buffer->height);
+			wl_surface_attach(wl_surface, back_buffer->wl_buffer, 0, 0);
+			wl_surface_commit(wl_surface);
+			wl_surface_damage(wl_surface, 0, 0, back_buffer->width, back_buffer->height);
+			xdg_surface_set_window_geometry(xdg_surface,
+				0, 0, back_buffer->width, back_buffer->height);
 
-		swap_buffers();
+			swap_buffers();
+		}
+
+		if (nanosleep(&default_sleep_time, NULL) != 0) {
+			set_exit_code(4);
+		}
 
 		wl_display_roundtrip(wl_display);
 		if (is_exiting()) {
