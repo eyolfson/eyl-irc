@@ -7,6 +7,10 @@ A primitive form of communication.
 We target the Wayland protocol. Therefore, this software only runs on modern
 Linux distributions. Everything is a work in progress.
 
+## TODO
+
+- Cairo font scaling to DPI
+
 ## License
 
 All code is licensed under GPLv3+.
