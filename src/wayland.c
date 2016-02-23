@@ -40,6 +40,7 @@ static struct wl_shm *wl_shm = NULL;
 static struct xdg_shell *xdg_shell = NULL;
 static struct xdg_surface *xdg_surface = NULL;
 static struct wl_callback *wl_frame_callback = NULL;
+static struct wl_output *wl_output = NULL;
 
 static bool needs_draw = true;
 static int32_t current_width = 300;
@@ -198,6 +199,49 @@ static void fini_buffers()
 	fini_buffer(&buffers[1]);
 }
 
+static void wl_output_geometry(void *data,
+                               struct wl_output *wl_output,
+                               int32_t x,
+                               int32_t y,
+                               int32_t physical_width,
+                               int32_t physical_height,
+                               int32_t subpixel,
+                               const char *make,
+                               const char *model,
+                               int32_t transform)
+{
+}
+
+static void wl_output_mode(
+	void *data,
+	struct wl_output *wl_output,
+	uint32_t flags,
+	int32_t width,
+	int32_t height,
+	int32_t refresh)
+{
+}
+
+static void wl_output_done(void *data, struct wl_output *wl_output)
+{
+
+}
+
+static void wl_output_scale(
+	void *data,
+	struct wl_output *wl_output,
+	int32_t factor)
+{
+
+}
+
+static struct wl_output_listener wl_output_listener = {
+	wl_output_geometry,
+	wl_output_mode,
+	wl_output_done,
+	wl_output_scale,
+};
+
 static void global(void *data,
                    struct wl_registry *wl_registry,
                    uint32_t name,
@@ -224,6 +268,19 @@ static void global(void *data,
 			name,
 			&xdg_shell_interface,
 			version);
+	}
+	else if (strcmp(interface, wl_output_interface.name) == 0) {
+		/* Assume only one output */
+		if (wl_output != NULL) {
+			set_exit_code(1);
+			return;
+		}
+		wl_output = wl_registry_bind(
+			wl_registry,
+			name,
+			&wl_output_interface,
+			version);
+		wl_output_add_listener(wl_output, &wl_output_listener, NULL);
 	}
 }
 
@@ -261,6 +318,16 @@ static void xdg_surface_configure(
 }
 
 static void xdg_surface_close(void *data, struct xdg_surface *xdg_surface)
+{
+}
+
+static void wl_surface_enter(void *data, struct wl_surface *wl_surface,
+                             struct wl_output *output)
+{
+}
+
+static void wl_surface_leave(void *data, struct wl_surface *wl_surface,
+                             struct wl_output *output)
 {
 }
 
@@ -324,6 +391,10 @@ static struct xdg_surface_listener xdg_surface_listener = {
 static struct wl_callback_listener frame_callback_listener = {
 	frame_callback_done,
 };
+static struct wl_surface_listener wl_surface_listener = {
+	wl_surface_enter,
+	wl_surface_leave,
+};
 
 void *wayland_start(void *arg)
 {
@@ -357,6 +428,7 @@ void *wayland_start(void *arg)
 	if (wl_surface == NULL) {
 		printf("wl_surface failed\n");
 	}
+	wl_surface_add_listener(wl_surface, &wl_surface_listener, NULL);
 	xdg_surface = xdg_shell_get_xdg_surface(xdg_shell, wl_surface);
 	if (xdg_surface == NULL) {
 		printf("xdg_surface failed\n");
