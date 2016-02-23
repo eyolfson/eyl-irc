@@ -46,6 +46,11 @@ static bool needs_draw = true;
 static int32_t current_width = 300;
 static int32_t current_height = 200;
 
+static int32_t output_width = 0;
+static int32_t output_height = 0;
+static int32_t output_physical_width = 0;
+static int32_t output_physical_height = 0;
+
 struct buffer {
 	int32_t fd;
 	uint32_t *data;
@@ -210,6 +215,8 @@ static void wl_output_geometry(void *data,
                                const char *model,
                                int32_t transform)
 {
+	output_physical_width = physical_width;
+	output_physical_height = physical_height;
 }
 
 static void wl_output_mode(
@@ -220,6 +227,8 @@ static void wl_output_mode(
 	int32_t height,
 	int32_t refresh)
 {
+	output_width = width;
+	output_height = height;
 }
 
 static void wl_output_done(void *data, struct wl_output *wl_output)
@@ -441,6 +450,9 @@ void *wayland_start(void *arg)
 	if (is_exiting()) {
 		return NULL;
 	}
+
+	wl_display_roundtrip(wl_display);
+	printf("%dx%d physical: %dx%d\n", output_width, output_height, output_physical_width, output_physical_height);
 
 	struct timespec default_sleep_time = {
 		.tv_sec = 0,
