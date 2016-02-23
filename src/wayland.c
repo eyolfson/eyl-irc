@@ -428,6 +428,7 @@ void *wayland_start(void *arg)
 	if (wl_surface == NULL) {
 		printf("wl_surface failed\n");
 	}
+	wl_surface_set_buffer_scale(wl_surface, 1);
 	wl_surface_add_listener(wl_surface, &wl_surface_listener, NULL);
 	xdg_surface = xdg_shell_get_xdg_surface(xdg_shell, wl_surface);
 	if (xdg_surface == NULL) {
