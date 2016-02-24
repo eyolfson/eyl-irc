@@ -391,8 +391,13 @@ static void draw(cairo_t *cr)
 	cairo_identity_matrix(cr);
 }
 
-static struct wl_registry_listener registry_listener = {global, global_remove};
-static struct xdg_shell_listener xdg_shell_listener = {ping};
+static struct wl_registry_listener registry_listener = {
+	global,
+	global_remove
+};
+static struct xdg_shell_listener xdg_shell_listener = {
+	ping
+};
 static struct xdg_surface_listener xdg_surface_listener = {
 	xdg_surface_configure,
 	xdg_surface_close
