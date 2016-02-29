@@ -12,6 +12,7 @@ Linux distributions. Everything is a work in progress.
 - [ ] Cairo font scaling to DPI
 - [ ] Parse host names properly
 - [ ] Drawing / data API
+- [ ] IRC API
 
 ## License
 
