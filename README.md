@@ -13,7 +13,7 @@ Linux distributions. Everything is a work in progress.
 - [ ] Parse host names properly
 - [ ] Drawing / data API
 - [ ] IRC API (Double buffered? or queued)
-- [ ] Performance on 4K display
+- [ ] Performance on 4K display (damage optimization)
 
 ## License
 
