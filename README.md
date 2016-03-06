@@ -18,6 +18,7 @@ Linux distributions. Everything is a work in progress.
 - [ ] Drawing / data API
 - [ ] IRC API (Double buffered? or queued)
 - [ ] Performance on 4K display (damage optimization)
+- [ ] Vulkan?
 
 ## License
 
