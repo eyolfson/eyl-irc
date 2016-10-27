@@ -20,6 +20,7 @@ find_package(PkgConfig)
 
 pkg_check_modules(CAIRO REQUIRED cairo)
 pkg_check_modules(WAYLAND_CLIENT REQUIRED wayland-client)
+pkg_check_modules(WAYLAND_PROTOCOLS wayland-protocols)
 pkg_check_modules(WAYLAND_SCANNER REQUIRED wayland-scanner)
 
 find_package(Threads)
@@ -38,14 +39,14 @@ add_custom_command(
 	OUTPUT ${CMAKE_BINARY_DIR}/xdg_shell.h
 	COMMAND wayland-scanner
 	ARGS client-header
-	     ${CMAKE_SOURCE_DIR}/../wayland-protocol/xdg-shell-unstable-v5.xml
+	     ${WAYLAND_PROTOCOLS_PREFIX}/share/wayland-protocols/unstable/xdg-shell/xdg-shell-unstable-v5.xml
 	     ${CMAKE_BINARY_DIR}/xdg_shell.h
 )
 add_custom_command(
 	OUTPUT ${CMAKE_BINARY_DIR}/xdg_shell.c
 	COMMAND wayland-scanner
 	ARGS code
-	     ${CMAKE_SOURCE_DIR}/../wayland-protocol/xdg-shell-unstable-v5.xml
+	     ${WAYLAND_PROTOCOLS_PREFIX}/share/wayland-protocols/unstable/xdg-shell/xdg-shell-unstable-v5.xml
 	     ${CMAKE_BINARY_DIR}/xdg_shell.c
 )
 
