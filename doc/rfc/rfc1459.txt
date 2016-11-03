@@ -1762,7 +1762,7 @@ RFC 1459              Internet Relay Chat Protocol              May 1993
    is the nickname of the receiver of the message.  <receiver> can also
    be a list of names or channels separated with commas.
 
-   The <receiver> parameter may also me a host mask  (#mask)  or  server
+   The <receiver> parameter may also be a host mask  (#mask)  or  server
    mask  ($mask).   In  both cases the server will only send the PRIVMSG
    to those who have a server or host matching the mask.  The mask  must
    have at  least  1  (one)  "."  in it and no wildcards following the
