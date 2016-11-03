@@ -1187,8 +1187,7 @@ RFC 1459              Internet Relay Chat Protocol              May 1993
            k - set a channel key (password).
 
    When using the 'o' and 'b' options, a restriction on a total of three
-   per mode command has been imposed.  That is, any combination of 'o'
-   and
+   per mode command has been imposed.
 
 4.2.3.2 User modes
 
