@@ -1,11 +1,11 @@
-# IRC Client
+# eyl IRC
 
 A primitive form of communication.
 
 ## Design
 
 We target the Wayland protocol. Therefore, this software only runs on modern
-Linux distributions. Everything is a work in progress.
+Linux distributions. Everything is a work in progress. Codename: Hail.
 
 ## Requirements
 
