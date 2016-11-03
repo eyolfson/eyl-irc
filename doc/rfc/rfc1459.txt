@@ -284,12 +284,14 @@ Oikarinen & Reed                                                [Page 5]
 RFC 1459              Internet Relay Chat Protocol              May 1993
 
 
+
    connected to the network. These channels are marked by the first
-   character being a only clients on the server where it exists may join
-   it.  These are distinguished by a leading '&' character.  On top of
-   these two types, there are the various channel modes available to
-   alter the characteristics of individual channels.  See section 4.2.3
-   (MODE command) for more details on this.
+   character being a '#'.  The other type of channel is limited to one
+   server, and only clients on the server where it exists may join
+   it.  These channels are distinguished by a leading '&' character.
+   On top of these two types, there are the various channel modes
+   available to alter the characteristics of individual channels.
+   See section 4.2.3 (MODE command) for more details on this.
 
    To create a new channel or become part of an existing channel, a user
    is required to JOIN the channel.  If the channel doesn't exist prior
