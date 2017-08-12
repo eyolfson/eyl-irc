@@ -9,6 +9,7 @@ Linux distributions. Everything is a work in progress. Codename: Hail.
 
 ## Requirements
 
+- Linux
 - Wayland
 
 ## TODO
