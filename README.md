@@ -20,6 +20,7 @@ Linux distributions. Everything is a work in progress. Codename: Hail.
 - [ ] IRC API (Double buffered? or queued)
 - [ ] Performance on 4K display (damage optimization)
 - [ ] Vulkan?
+- [ ] Abstract protocol?
 
 ## License
 
