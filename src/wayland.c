@@ -428,12 +428,18 @@ void *wayland_start(void *arg)
 	wl_display_dispatch(wl_display);
 	if (wl_compositor == NULL) {
 		printf("wl_compositor failed\n");
+		set_exit_code(2);
+		return NULL;
 	}
 	if (wl_shm == NULL) {
 		printf("wl_shm failed\n");
+		set_exit_code(2);
+		return NULL;
 	}
 	if (xdg_shell == NULL) {
 		printf("xdg_shell failed\n");
+		set_exit_code(2);
+		return NULL;
 	}
 	xdg_shell_add_listener(xdg_shell, &xdg_shell_listener, NULL);
 	xdg_shell_use_unstable_version(xdg_shell, XDG_SHELL_VERSION_CURRENT);
